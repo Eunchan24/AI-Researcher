@@ -22,7 +22,7 @@ from datetime import datetime, timedelta
     ))
 )
 @register_tool("search_github_repos")
-def search_github_repos(context_variables, query, limit=5):
+def search_github_repos(context_variables, query, limit=5, min_stars=10, max_age_years=3):
     """
     Search GitHub public repositories based on a keyword.
 
@@ -31,8 +31,6 @@ def search_github_repos(context_variables, query, limit=5):
     :return: A list of dictionaries containing repository details, limited to the specified number.
     """
 
-    min_stars        = context_variables.get("min_stars", 10)
-    max_age_years    = context_variables.get("max_age_years", 3)
     cutoff_date = datetime.utcnow() - timedelta(days=365 * max_age_years)
     
     date_limit = context_variables.get("date_limit")
