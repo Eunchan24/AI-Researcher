@@ -11,6 +11,7 @@ from tenacity import (
     retry_if_exception_type
 )
 from urllib.parse import quote
+from datetime import datetime, timedelta
 
 @retry(
     stop=stop_after_attempt(3),
@@ -29,6 +30,11 @@ def search_github_repos(context_variables, query, limit=5):
     :param limit: The total number of repositories to return.
     :return: A list of dictionaries containing repository details, limited to the specified number.
     """
+
+    min_stars        = context_variables.get("min_stars", 10)
+    max_age_years    = context_variables.get("max_age_years", 3)
+    cutoff_date = datetime.utcnow() - timedelta(days=365 * max_age_years)
+    
     date_limit = context_variables.get("date_limit")
     assert date_limit, "Date limit is required"
 
@@ -56,6 +62,14 @@ def search_github_repos(context_variables, query, limit=5):
         if response.status_code == 200:
             items = response.json().get('items', [])
             for item in items:
+                if item.get('stargazers_count', 0) < min_stars:
+                    continue
+                pushed = item.get('pushed_at')
+                if pushed:
+                    pushed_dt = datetime.fromisoformat(pushed.replace("Z", ""))
+                    if pushed_dt < cutoff_date:
+                        continue
+                
                 formatted_repo = {
                     "name": f"{item['owner']['login']}/{item['name']}",
                     "author": item['owner']['login'],
